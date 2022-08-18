@@ -1,0 +1,919 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r}
+cov = read.csv("full_einstein_25col.csv")
+head(cov)
+typeof(cov)
+cov <- as.data.frame(cov)
+```
+
+```{r}
+summary(cov)
+```
+```{r}
+str(cov)
+```
+
+```{r}
+cov$y = as.factor(cov$y)
+cov$Sex = as.factor(cov$Sex)
+```
+
+##Missingness
+
+```{r}
+colSums(is.na(cov))
+```
+```{r}
+library(skimr)
+skim(cov)
+```
+```{r}
+age_5 <- filter(cov, cov$Age < 5)
+str(age_5)
+```
+
+##Changing Date column to data format:
+
+```{r}
+cov$Date <- as.Date(cov$Date, format = "%Y-%m-%d")
+
+```
+
+
+##Checking duplicated values:
+
+```{r}
+sum(duplicated(cov))
+```
+
+##Removing redundant variables:
+
+
+###The ID variable is of no use for the analyses so, we'll be removing it. 
+
+```{r}
+library(tidyverse)
+cov <- select(cov, -ID)
+
+```
+
+
+
+------------------------------------------------------
+
+#EDA
+
+
+
+
+## Validator
+
+```{r}
+library(validate)
+str(cov)
+cov.rules <- validator(
+  covid = is.element(y,c(1,0)),
+
+  age=(Age>0 & Age<=100),
+  
+  sex = is.element(Sex,c("F","M")),
+
+  Hematocrit_=(Hematocrit>0 & Hematocrit<=100),
+  
+  Hemoglobin_=(Hemoglobin>0 & Hemoglobin<=100),
+  
+  RedBloodCells_=(RedBloodCells>0 & RedBloodCells<=100),
+  
+  Leukocytes_=(Leukocytes>0 & Leukocytes<=100),
+  
+  Platelets_=(Platelets>=0),
+  
+  MPV_=(MPV>0 & MPV<=100),
+  
+  MCV_=(MCV>=0),
+  
+  MCHC_=(MCHC>0 & MCHC<=100),
+  
+  MCH_=(MCH>0 & MCH<=100),
+  
+  RDW_=(RDW>0 & RDW<=100),
+  
+  Monocytes_=(Monocytes>0 & Monocytes<=100),
+  
+  Monocytes._=(Monocytes.>0 & Monocytes.<=100),
+  
+  Lymphocytes_=(Lymphocytes>0 & Lymphocytes<=100),
+  
+  Lymphocytes._=(Lymphocytes.>0 & Lymphocytes.<=100),
+  
+  Eosinophils_=( Eosinophils>0 &  Eosinophils<=100),
+  
+  Eosinophils._=( Eosinophils.>0 &  Eosinophils.<=100),
+  
+  Basophils_=(Basophils>0 & Basophils<=100),
+  
+  Basophils._=(Basophils.>0 & Basophils.<=100),
+  
+  Neutrophils_=(Neutrophils>0 & Neutrophils<=100),
+  
+  Neutrophils._=(Neutrophils.>0 & Neutrophils.<=100)
+  
+  ) 
+
+#Now we will apply these rules to our data set. 
+
+qual.check <- confront(cov, cov.rules)
+summary(qual.check)
+```
+
+```{r}
+colnames(cov)
+```
+
+###Outlier detection
+```{r}
+library(tidyverse)
+ggplot(data=cov,aes(y=Age))+geom_boxplot()
+
+ggplot(data=cov,aes(y=Hematocrit))+geom_boxplot()
+
+ggplot(data=cov,aes(y=Hemoglobin))+geom_boxplot()
+
+ggplot(data=cov,aes(y=RedBloodCells))+geom_boxplot()
+
+ggplot(data=cov,aes(y=Leukocytes))+geom_boxplot()
+
+ggplot(data=cov,aes(y=Platelets))+geom_boxplot()
+
+ggplot(data=cov,aes(y=MPV))+geom_boxplot()
+
+ggplot(data=cov,aes(y=MCV))+geom_boxplot()
+
+ggplot(data=cov,aes(y=MCHC))+geom_boxplot()
+
+ggplot(data=cov,aes(y=MCH))+geom_boxplot()
+
+ggplot(data=cov,aes(y=RDW))+geom_boxplot()
+
+ggplot(data=cov,aes(y=Monocytes))+geom_boxplot()
+
+ggplot(data=cov,aes(y=Lymphocytes))+geom_boxplot()
+
+ggplot(data=cov,aes(y=Eosinophils))+geom_boxplot()
+
+ggplot(data=cov,aes(y=Basophils))+geom_boxplot()
+
+ggplot(data=cov,aes(y=Neutrophils))+geom_boxplot()
+
+```
+
+```{r}
+library(dplyr)
+filter(cov, cov$Lymphocytes > 20000, na.rm = TRUE)
+colnames(cov)
+```
+
+###Distributions of explanatory variables:
+
+
+###Numerical continuous variables:
+
+
+```{r}
+hist(cov$Age,prob=TRUE)
+
+hist(cov$Hematocrit,prob=TRUE)
+
+hist(cov$Hemoglobin,prob=TRUE)
+
+hist(cov$RedBloodCells,prob=TRUE)
+
+hist(cov$Leukocytes,prob=TRUE)
+
+hist(cov$Platelets,prob=TRUE)
+
+hist(cov$MPV,prob=TRUE)
+
+hist(cov$MCV,prob=TRUE)
+
+hist(cov$MCHC,prob=TRUE)
+
+hist(cov$MCH,prob=TRUE)
+
+hist(cov$RDW,prob=TRUE)
+
+hist(cov$Monocytes,prob=TRUE)
+
+hist(cov$Lymphocytes,prob=TRUE)
+
+hist(cov$Eosinophils,prob=TRUE)
+
+hist(cov$Basophils,prob=TRUE)
+
+hist(cov$Neutrophils,prob=TRUE)
+
+```
+
+
+###Categorical Explanatory Variables:
+
+Sex:
+
+```{r}
+
+ggplot(data=cov,aes(x=Sex))+geom_bar()
+
+```
+
+
+##Relationships:
+
+##Relationships among Uni variate explanatory variables 
+
+#####Relationship between explanatory numerical continuous variables and other explanatory numerical continuous variables:
+
+We will be using correlation plot for this.
+
+##Correlation
+
+```{r}
+
+cov.cont<-colnames(cov)
+vec<-c(FALSE,FALSE,TRUE,FALSE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE)
+cov.cont<-cov[vec]
+cov.cont
+
+cor_matrix<-cor(cov.cont,method='spearman')
+cor_matrix
+
+
+library(corrplot)
+
+corrplot(cor_matrix,diag=F,type="upper",insig = "p-value",number.digits = 1,addCoef.col = 'black',tl.cex=0.6,number.cex=0.5)
+
+```
+
+
+###For the blood attributes that are included in the data set with their percentage, we will be removing their percentage columns as they are redundant variables. 
+
+```{r}
+
+cov <- select(cov, -Monocytes., -Lymphocytes., -Eosinophils., -Basophils.,  -Neutrophils.)
+
+```
+
+
+###Checking the correlation again:
+```{r}
+
+cov.cont.nopercent<-colnames(cov)
+vec<-c(FALSE,FALSE,TRUE,FALSE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE)
+cov.cont.nopercent<-cov[vec]
+cov.cont.nopercent
+
+cor_nopercent_matrix<-cor(cov.cont.nopercent,method='spearman')
+cor_nopercent_matrix
+
+
+library(corrplot)
+
+corrplot(cor_nopercent_matrix,diag=F,type="upper",insig = "p-value",number.digits = 1,addCoef.col = 'black',tl.cex=0.6,number.cex=0.5)
+```
+
+###There is high correlation between independent variables.
+
+  Hence we will be adding the variables together to decrease our chances of error in the model.  
+
+```{r}
+
+cov <- cov %>% mutate ( Hematocrit_Hemoglobin_RedBloodCells = Hematocrit + Hemoglobin + RedBloodCells)
+
+
+cov <- cov %>% mutate ( MCV_MCH = MCV + MCH)
+
+
+cov <- cov %>% mutate ( Neutrophils_Leukocytes = Neutrophils + Leukocytes)
+
+
+cov = subset(cov, select = -c( RedBloodCells, Hematocrit, Hemoglobin, MCV, MCH, Neutrophils, Leukocytes))
+
+colnames(cov)
+
+```
+
+###Checking the correlation again:
+
+```{r}
+
+cov.cont.nopercent<-colnames(cov)
+vec<-c(FALSE,FALSE,TRUE,FALSE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE)
+cov.cont.nopercent<-cov[vec]
+cov.cont.nopercent
+
+cov.cont <- cov.cont.nopercent
+cor_nopercent_matrix<-cor(cov.cont.nopercent,method='spearman')
+cor_nopercent_matrix
+
+
+library(corrplot)
+
+corrplot(cor_nopercent_matrix,diag=F,type="upper",insig = "p-value",number.digits = 1,addCoef.col = 'black',tl.cex=0.6,number.cex=0.5)
+```
+
+
+####Relationship between explanatory categorical variables and explanatory numerical continuous variables:
+
+
+```{r}
+colnames(cov)
+```
+
+```{r}
+library(cowplot)
+plot1 = ggplot( data=cov, aes( x = Sex, y = Age  )) + geom_boxplot()
+
+plot2 = ggplot( data=cov, aes( x = Sex, y = Hematocrit_Hemoglobin_RedBloodCells)) + geom_boxplot() 
+plot2
+
+plot6 = ggplot( data=cov, aes( x = Sex, y =  Platelets )) + geom_boxplot() 
+
+plot7 = ggplot( data=cov, aes( x = Sex, y = MPV  )) + geom_boxplot()
+
+plot8 = ggplot( data=cov, aes( x = Sex, y = MCV_MCH  )) + geom_boxplot()
+
+plot9 = ggplot( data=cov, aes( x = Sex, y = MCHC  )) + geom_boxplot()
+
+plot11 = ggplot( data=cov, aes( x = Sex, y = RDW  )) + geom_boxplot()
+
+plot12 = ggplot( data=cov, aes( x = Sex, y = Monocytes  )) + geom_boxplot()
+
+plot13 = ggplot( data=cov, aes( x = Sex, y =  Lymphocytes )) + geom_boxplot()
+
+plot14 = ggplot( data=cov, aes( x = Sex, y = Eosinophils  )) + geom_boxplot()
+
+plot15 = ggplot( data=cov, aes( x = Sex, y = Basophils  )) + geom_boxplot()
+
+plot16 = ggplot( data=cov, aes( x = Sex, y = Neutrophils_Leukocytes  )) + geom_boxplot()
+
+plot_grid(plot1, plot2, plot6, plot7, plot8, plot9, plot11, plot12, plot13, plot14, plot15, plot16, labels = 'AUTO')
+
+
+```
+
+
+
+
+##Relation between explanatory categorical variable and target variable:
+
+
+##Plotting a stacked bar chart between Sex and Target variable 'y'.
+
+```{r}
+library(ggplot2)
+
+# stacked bar chart
+ggplot(cov, 
+       aes(x = y, 
+           fill = Sex)) + 
+  geom_bar(position = "stack")
+
+
+```
+
+
+
+
+##Relation between explanatory numerical continuous variables and target variable:
+
+
+```{r}
+
+
+plot1 = ggplot( data=cov, aes( x = y, y = Age  )) + geom_boxplot()
+plot1
+
+plot2 = ggplot( data=cov, aes( x = y, y = Hematocrit_Hemoglobin_RedBloodCells)) + geom_boxplot() 
+
+plot6 = ggplot( data=cov, aes( x = y, y =  Platelets )) + geom_boxplot() 
+plot6
+
+plot7 = ggplot( data=cov, aes( x = y, y = MPV  )) + geom_boxplot()
+
+plot8 = ggplot( data=cov, aes( x = y, y = MCV_MCH  )) + geom_boxplot()
+
+plot9 = ggplot( data=cov, aes( x = y, y = MCHC  )) + geom_boxplot()
+
+plot11 = ggplot( data=cov, aes( x = y, y = RDW  )) + geom_boxplot()
+
+plot12 = ggplot( data=cov, aes( x = y, y = Monocytes  )) + geom_boxplot()
+
+plot13 = ggplot( data=cov, aes( x = y, y =  Lymphocytes )) + geom_boxplot()
+
+plot14 = ggplot( data=cov, aes( x = y, y = Eosinophils  )) + geom_boxplot()
+
+plot15 = ggplot( data=cov, aes( x = y, y = Basophils  )) + geom_boxplot()
+plot15
+
+plot16 = ggplot( data=cov, aes( x = y, y = Neutrophils_Leukocytes  )) + geom_boxplot()
+
+plot_grid(plot1, plot2, plot6, plot7, plot8, plot9, plot11, plot12, plot13, plot14, plot15, plot16, labels = 'AUTO')
+
+plot_grid(plot1, plot6, plot15, labels = 'AUTO')
+
+```
+##Statistical Anlaysis of target variable and explantory variables:
+
+```{r}
+summary(table(cov$y,cov$Age))
+summary(table(cov$y,cov$Hematocrit_Hemoglobin_RedBloodCells))
+summary(table(cov$y,cov$Platelets))
+summary(table(cov$y,cov$MPV))
+summary(table(cov$y,cov$RDW))
+summary(table(cov$y,cov$Monocytes))
+summary(table(cov$y,cov$Lymphocytes))
+summary(table(cov$y,cov$Eosinophils))
+summary(table(cov$y,cov$Basophils))
+summary(table(cov$y,cov$Neutrophils_Leukocytes))
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+##Further checking the relationships/interactions between the variables:
+
+```{r}
+pairs(cov.cont,panel=panel.smooth)
+```
+
+
+
+
+----------------------------------------------------------------
+
+
+
+
+```{r}
+write.csv(cov,"/Users/YKA/Downloads/cov1.csv", row.names = TRUE)
+```
+
+
+
+
+
+
+
+#### 3. Principal Component Analysis{#Principal_Component_Analysis}
+```{r}
+
+# perform PCA on the cov dataset
+#   note: variables are centered and scaled before analysis
+
+colnames(cov)
+cov.con<-colnames(cov)
+vect<-c(FALSE,FALSE,TRUE,FALSE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE)
+cov.con<-cov[vect]
+cov.con
+pc_cov <- prcomp(cov.con, center = T, scale. = T)
+
+# inspect the attributes of the PCA object returned by prcomp
+attributes(pc_cov)
+# see value section of the help for the prcomp for more details
+help(prcomp)
+pc_cov$x
+
+```
+
+#### 4. Visual analysis of PCA results{#Visual_analysis_PCA}
+```{r}
+# calculate the proportion of exaplained variance (PEV) from the std values
+pc_cov_var <- pc_cov$sdev^2
+pc_cov_var
+pc_cov_PEV <- pc_cov_var / sum(pc_cov_var)
+pc_cov_PEV
+
+# plot the variance per PC
+#   note: this can be done using the plot function on the prcomp object
+plot(pc_cov)
+
+# plot the cumulative value of PEV for increasing number of additional PCs
+#   note: add an 80% threshold line to inform the feature extraction
+#     according to the plot the first 3 PCs should be selected
+opar <- par(no.readonly = TRUE)
+plot(
+  cumsum(pc_cov_PEV),
+  ylim = c(0,1),
+  xlab = 'PC',
+  ylab = 'cumulative PEV',
+  pch = 20,
+  col = 'orange'
+)
+abline(h = 0.8, col = 'red', lty = 'dashed')
+par(opar)
+
+# get and inspect the loadings for each PC
+#   note: loadings are reported as a rotation matrix (see lecture)
+pc_cov_loadings <- pc_cov$rotation
+pc_cov_loadings
+
+# plot the loadings for the first three PCs as a barplot
+#   note: two vectors for colours and labels are created for convenience
+#     for details on the other parameters see the help for barplot and legend
+opar <- par(no.readonly = TRUE)
+colvector = c('red', 'orange', 'yellow', 'green', 'cyan', 'blue')
+labvector = c('PC1', 'PC2', 'PC3')
+barplot(
+  pc_cov_loadings[,c(1:3)],
+  beside = T,
+  yaxt = 'n',
+  names.arg = labvector,
+  col = colvector,
+  ylim = c(-1,1),
+  border = 'white',
+  ylab = 'loadings'
+)
+axis(2, seq(-1,1,0.1))
+legend(
+  'bottomright',
+  bty = 'n',
+  col = colvector,
+  pch = 15,
+  row.names(pc_cov_loadings)
+)
+par(opar)
+
+# generate a biplot for each pair of important PCs (and show them on the same page)
+#   note: the option choices is used to select the PCs - default is 1:2
+opar <- par(no.readonly = TRUE)
+par(mfrow = c(2,2))
+biplot(
+  pc_cov,
+  scale = 0,
+  col = c('grey40','orange')
+)
+biplot(
+  pc_cov,
+  choices = c(1,3),
+  scale = 0,
+  col = c('grey40','orange')
+)
+biplot(
+  pc_cov,
+  choices = c(2,3),
+  scale = 0,
+  col = c('grey40','orange')
+)
+par(opar)
+```
+
+
+
+
+-----------------------------------------------------------------------------
+
+
+
+
+
+##Applying neural network:
+
+
+#### 0. load the neuralnet package
+```{r}
+install.packages("neuralnet")
+library(neuralnet)
+```
+
+#### 1. data preparation
+```{r}
+### 1.1 load the data from the pc_cov.csv file and inspect it
+
+### 1.2 transform the data using a min-max function
+###   first define a MinMax function
+MinMax <- function(x){
+  tx <- (x - min(x)) / (max(x) - min(x))
+  return(tx)
+}
+### then apply the function to each column of the data set (except for y)
+###   note: remove the y column first and then added it again after transformation
+###     and do not forget to cast the apply output to a data frame
+
+
+colnames(cov)
+coltokeep<-c(FALSE,FALSE,TRUE,FALSE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE)
+
+
+cov_minmax <-cov[,coltokeep]
+cov_minmax <- apply(cov_minmax, 2, MinMax)
+cov_minmax <- as.data.frame(cov_minmax)
+cov_minmax$y <- cov$y
+
+
+### 1.3 create a 70/30 training/test set split
+n_rows <- nrow(cov_minmax)
+training_idx <- sample(n_rows, n_rows * 0.7)
+training_cov_minmax <- cov_minmax[training_idx,]
+test_cov_minmax <- cov_minmax[-training_idx,]
+```
+
+##Applying NN directly:
+
+
+#### 2. Neural network training
+```{r}
+### 2.1 define a formula for predicting y
+#pc_cov_formula = y ~ AGE + Hematocrit + Hemoglobin + RedBloodCells + Leukocytes + Platelets + MPV + MCV + MCHC + MCH + RDW + Monocytes + Lymphocytes + Eosinophils + Basophils + Neutrophils
+colnames(cov_minmax)
+cov_formula = y~.
+### 2.2 train a neural network (feel free to choose the network structure)
+cov_nn <- neuralnet(cov_formula, hidden = c(3,2), data = training_cov_minmax,threshold=0.2)
+```
+
+#### 3. Neural network prediction
+```{r}
+### 3.1 compute the prediction for the test set
+###   note: the y attribute should be excluded from the test data set
+pred_test_cov_minmax = test_cov_minmax[,-17]
+pred_test_cov_minmax
+pred_cov_nn <- compute(cov_nn, pred_test_cov_minmax) 
+pred_cov_nn
+### 3.2 create a table with actual and predicted values
+###   note: round up the predicted results to get integers
+###     R round function can be used for this
+pred_cov_nn$net.result
+test_cov_minmax$y
+cov_results <- data.frame(actual = test_cov_minmax$y,predicted = round(pred_cov_nn$net.result[,2]) )
+cov_results
+round(pred_cov_nn$net.result)
+### 3.3 create a contingency table of the actual VS predicted
+table_cov_results <- table(cov_results)
+
+
+test_cov_minmax$y
+filter(test_cov_minmax, test_cov_minmax$y == '1')
+
+table_cov_results
+
+### 3.4 calculate accuracy from the contingency table as:
+###   sum of diagonal elements over sum of the matrix values
+
+diag(table_cov_results)
+acc_cov_results <- sum(diag(table_cov_results)) / sum(table_cov_results)
+acc_cov_results
+
+```
+
+```{r}
+#generating a confusion matrix from the predictions of first neural network
+
+table_cov_results
+cov_results$actual
+```
+```{r}
+TN=sum(cov_results$actual=='0'& cov_results$predicted=='1')
+TN
+TP=sum(cov_results$actual=='1'& cov_results$predicted=='1')
+TP
+FP=sum(cov_results$actual=='0'& cov_results$predicted=='0')
+FP
+FN=sum(cov_results$actual=='1'& cov_results$predicted=='0')
+FN
+```
+```{r}
+accuracy = (TN + TP) / (TN + TP + FN + FP) 
+precision = TP / (TP + FP)
+recall = TP / (TP + FN)
+specificity = (TN)/(TN + FP)
+sensitivity = (TP)/(TP + FN)
+F1 = 2 * (precision*recall) / (precision + recall)
+
+```
+```{r}
+paste('precision:' , precision) 
+paste('recall: ' , recall) 
+paste(' accuracy: ' , accuracy) 
+paste(' F1 score: ' , F1)
+paste('n specificity: ' , specificity) 
+paste('n sensitivity: ' , sensitivity) 
+```
+
+# Aggregating actual and predicted labels in a dataset for better evaluation implementation
+```{r}
+x=pred_cov_nn$net.result
+
+x[,1]
+
+```
+
+```{r}
+raw_pred<-factor(round(x[,1]),labels=c("No","Yes"))
+nn_predict <-  data.frame(actual = test_cov_minmax[,13],predicted = raw_pred,No=x[,1], yes=x[,2])
+summary(nn_predict) 
+
+```
+
+
+
+
+
+
+```{r}
+#generating a performance and prediction object for plotting a ROC curve for the first Neural Network Model.(with randomly sampled train and test dataset)
+library(ROCR)
+nn_models_prob <- data.frame(predicted=nn_predict$yes)
+nn_models_prob
+nn_label <- data.frame(actual=nn_predict$actual)
+nn_label
+nn_ROC_pred = ROCR::prediction(nn_models_prob,nn_label)
+typeof(nn_ROC_pred)
+nn_ROC_perf = performance(nn_ROC_pred,measure='tpr','fpr')
+
+```
+
+
+```{r}
+opar <- par(no.readonly = TRUE)
+par(pty = 's')
+plot(
+ nn_ROC_perf,
+ col = as.list(c("orange"))
+)
+abline(a = 0, b = 1, lty = 2, col = 'red')
+legend(
+  "bottomright",
+  names(nn_models_prob),
+  col = c("orange", "blue"),
+  lty = 1,
+  bty = 'n'
+)
+
+auc_nn<-performance(nn_ROC_pred,"auc")
+auc<-unlist(slot(auc_nn,"y.values"))
+auc<-round(auc,4)
+legend(.6,.2,auc,title="AUC")
+par <- opar
+
+ 
+```
+
+##Applying neural network using stratified sampling:
+
+```{r}
+#install.packages("lattice")
+#install.packages("caret")
+library(caret)
+library(lattice)
+
+train.index <- createDataPartition(cov_minmax$y, p = .7, list = FALSE)
+train_d <- data.frame(cov_minmax[ train.index,])
+test_d  <- data.frame(cov_minmax[-train.index,])
+train_d$y
+test_d$y
+```
+
+
+```{r}
+ncol(cov_minmax)
+```
+
+
+```{r}
+#library(neuralnet)
+nn_stratified<-neuralnet(y~.,data=train_d,threshold=0.1,hidden=c(3,2))
+```
+
+
+```{r}
+nn_stratified_results<- compute(nn_stratified, test_d[,-13])
+
+
+z<-factor(round(nn_stratified_results$net.result[,1]),labels=c("0","1"))
+
+
+
+nn_results_ <- data.frame(actual = test_d$y,predicted =z)
+
+```
+
+
+```{r}
+TN_=sum(nn_results_$actual=='0'& nn_results_$predicted=='1')
+TP_=sum(nn_results_$actual=='0'& nn_results_$predicted=='1')
+
+FP_=sum(nn_results_$actual=='0'& nn_results_$predicted=='0')
+FN_=sum(nn_results_$actual=='1'& nn_results_$predicted=='0')
+```
+```{r}
+TN_
+TP_
+FP_
+FN_
+```
+
+
+```{r}
+accuracy_ = (TN_+ TP_) / (TN_ + TP_ + FN_ + FP_) 
+precision_ = TP_/ (TP_ + FP_)
+recall_ = TP_ / (TP_ + FN_)
+F2_ = 2 * (precision_*recall_) / (precision_ + recall_)
+specificity_ = (TN_)/(TN_ + FP_)
+sensitivity_ = (TP_)/(TP_ + FN_)
+```
+
+
+```{r}
+paste('precision: ',precision_) 
+paste('recall: ' ,recall_) 
+paste('accuracy: ' , accuracy_) 
+paste('F1 score: ' , F2_)
+paste('specificity: ' , specificity_) 
+paste('sensitivity: ' , sensitivity_) 
+```
+
+
+# Aggregating actual and predicted labels in a dataset for better evaluation implementation
+```{r}
+a=nn_stratified_results$net.result
+
+a[,1]
+
+```
+
+```{r}
+raw_predicted2<-factor(round(a[,1]),labels=c("No","Yes"))
+nn_predicted2 <-  data.frame(actual = test_d[,13],predicted = raw_predicted2,No=a[,1], yes=a[,2])
+summary(nn_predicted2) 
+
+```
+
+
+
+
+
+
+```{r}
+#generating a performance and prediction object for plotting a ROC curve for the first Neural Network Model.(with randomly sampled train and test dataset)
+library(ROCR)
+nn_models_prob_2 <- data.frame(predicted=nn_predicted2$yes)
+nn_models_prob_2
+nn_label_2 <- data.frame(actual=nn_predicted2$actual)
+nn_label_2
+nn_ROC_pred_2 = ROCR::prediction(nn_models_prob_2,nn_label_2)
+typeof(nn_ROC_pred_2)
+nn_ROC_perf_2 = performance(nn_ROC_pred_2,measure='tpr','fpr')
+
+```
+
+
+```{r}
+opar <- par(no.readonly = TRUE)
+par(pty = 's')
+plot(
+ nn_ROC_perf_2,
+ col = as.list(c("orange"))
+)
+abline(a = 0, b = 1, lty = 2, col = 'red')
+legend(
+  "bottomright",
+  names(nn_models_prob_2),
+  col = c("orange", "blue"),
+  lty = 1,
+  bty = 'n'
+)
+
+auc_nn_2<-performance(nn_ROC_pred_2,"auc")
+auc_2<-unlist(slot(auc_nn_2,"y.values"))
+auc_2<-round(auc,4)
+legend(.6,.2,auc,title="AUC")
+par <- opar
+
+ 
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
